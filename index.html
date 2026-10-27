@@ -52,6 +52,8 @@ input,textarea{background:#0d1327;border:1px solid var(--line);border-radius:6px
 <meta name="description" content="Idle Galaxy: Империя из руды — космический идл-кликер: добывайте руду, стройте флот, покоряйте Край Галактики и перерождайтесь ради звёздной пыли.">
 <meta property="og:title" content="Idle Galaxy: Империя из руды">
 <meta property="og:description" content="Космический идл-кликер: рудники, флот, руины Края и вечные перерождения.">
+<script src="https://unpkg.com/@vkontakte/vk-bridge/dist/vk-bridge.js"></script>
+<script>try{if(window.vkBridge)vkBridge.send('VKWebAppInit')}catch(e){}</script>
 </head>
 <body>
 <div class="wrap">
@@ -141,12 +143,18 @@ function defState(){return{ore:10,gas:5,ti:0,ships:0,shipsBuilt:0,dust:0,rebirth
  stats:{oreAll:0,gasAll:0,tiAll:0,buys:0,exp:0,expWin:0,bossWin:0,relicAll:0},
  log:['✨ База основана. Начните с покупки Робота-бурильщика!'],last:0,snd:true}}
 let S=defState();
-let sndA=null,evT=45,saveT=0,offlineShow=null,tab='base';
+let vkReady=false,sndA=null,evT=45,saveT=0,offlineShow=null,tab='base';
 
 // ===== утилиты =====
 const $=id=>document.getElementById(id);
 function fmt(n){n=Math.max(0,n);if(n>=1e12)return (n/1e12).toFixed(2)+'T';if(n>=1e9)return (n/1e9).toFixed(2)+'B';if(n>=1e6)return (n/1e6).toFixed(2)+'M';if(n>=1e3)return (n/1e3).toFixed(1)+'K';return n<10&&n%1!=0?n.toFixed(1):String(Math.round(n))}
-function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function vkPush(){if(!window.vkBridge)return;try{
+ const c=Object.assign({},S);c.log=S.log.slice(0,8);
+ vkBridge.send('VKWebAppStorageSet',{key:'idle_galaxy_save',value:JSON.stringify(c)}).catch(function(e){})
+}catch(e){}}
+function save(){S.last=Date.now();
+ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+ vkPush()}
 function slog(t){S.log.unshift(t);if(S.log.length>40)S.log.length=40}
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.getElementById('toasts').appendChild(d);setTimeout(function(){d.remove()},4000)}
 function beep(f,d){if(!S.snd)return;try{if(!sndA)sndA=new (window.AudioContext||window.webkitAudioContext)();const o=sndA.createOscillator(),g=sndA.createGain();o.type='sine';o.frequency.value=f;g.gain.value=.06;o.connect(g);g.connect(sndA.destination);o.start();o.stop(sndA.currentTime+(d||.12))}catch(e){}}
@@ -334,16 +342,33 @@ function doImport(){try{
 }catch(e){toast('❌ Неверный код сохранения')}}
 
 // ===== загрузка =====
-function load(){try{const raw=localStorage.getItem(KEY)||localStorage.getItem('spaceIdle_v4')||localStorage.getItem('spaceIdle');
- if(!raw)return;const o=JSON.parse(raw);const d=defState();
+function applySave(o){const d=defState();
  Object.keys(d).forEach(function(k){if(o[k]!==undefined)S[k]=o[k]});
  if(o.stats)S.stats=Object.assign(d.stats,o.stats);
- if(o.tech)S.tech=o.tech; if(o.relics)S.relics=o.relics;
- S.up=(S.up&&S.up.length==6)?S.up:d.up;S.auto=(S.auto&&S.auto.length==6)?S.auto:d.auto;
+ if(o.tech)S.tech=o.tech;
+ if(o.relics)S.relics=o.relics;
+ S.up=(S.up&&S.up.length==6)?S.up:d.up;
+ S.auto=(S.auto&&S.auto.length==6)?S.auto:d.auto;
  if(!S.contracts||S.contracts.length!=2)S.contracts=[];
- if(!S.log||!S.log.length)S.log=d.log;
- if(raw!=localStorage.getItem(KEY))slog('📦 Сохранение старой версии перенесено');
-}catch(e){S=defState();slog('⚠ Сохранение повреждено — начата новая база')}}
+ if(!S.log||!S.log.length)S.log=d.log}
+function loadLocal(){try{
+ const raw=localStorage.getItem(KEY)||localStorage.getItem('spaceIdle_v4')||localStorage.getItem('spaceIdle');
+ if(!raw)return;
+ try{applySave(JSON.parse(raw))}
+ catch(e){S=defState();S.log=['⚠ Сохранение повреждено — начата новая база']}
+}catch(e){}}
+function vkLoad(cb){
+ if(!(window.vkBridge&&vkBridge.send)){cb();return}
+ try{vkBridge.send('VKWebAppStorageGet',{keys:['idle_galaxy_save']}).then(function(d){
+  const v=(d&&d.keys&&d.keys[0])?d.keys[0].value:null;
+  if(v){try{const o=JSON.parse(v);
+   if(o.last&&(!S.last||o.last>S.last)){S=defState();applySave(o);slog('☁ Прогресс подтянут из VK Storage')}
+   vkReady=true;
+  }catch(e){}}
+  cb()
+ }).catch(function(){cb()})}
+ catch(e){cb()}
+}
 // ===== отрисовка =====
 function statCell(lbl,val,rate){return '<div class="stat"><b>'+fmt(val)+'</b><span>'+(rate!=null?'+'+fmt(rate)+'/сек ':'')+lbl+'</span></div>'}
 function setTab(t){tab=t;render()}
@@ -421,11 +446,16 @@ function renderStats(){
 
 // ===== запуск =====
 function init(){
- load();daily();offline();
- if(S.contracts.length!=2)newContracts();
- checkAch();
- setInterval(function(){tick(0.5);render()},500);
- render()}
+ loadLocal();
+ vkLoad(function(){
+  daily();offline();
+  if(S.contracts.length!=2)newContracts();
+  checkAch();
+  setInterval(function(){tick(0.5);render()},500);
+  render()
+ })
+}
+init();
 init();
 </script>
 </body>
