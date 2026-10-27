@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Idle Galaxy: Империя из руды</title>
+<style>
+:root{--bg:#0b0e1a;--panel:#121729;--panel2:#1a2138;--line:#2a3352;--txt:#dfe6ff;--dim:#8f9bc0;--acc:#5aa2ff;--good:#39d98a;--gold:#ffd166;--vio:#b48cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 50% -100px,#1a2145,var(--bg));color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;padding:16px;min-height:100vh}
+h1{text-align:center;color:var(--acc);letter-spacing:1px}
+.sub{text-align:center;color:var(--dim);font-size:13px;margin:4px 0 14px}
+.wrap{max-width:1180px;margin:0 auto}
+.bar{background:linear-gradient(90deg,#183055,#0d4f66);border:1px solid var(--acc);border-radius:10px;padding:8px;text-align:center;margin-bottom:10px;font-size:14px;display:none}
+.stats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 18px;text-align:center;min-width:130px}
+.stat b{font-size:20px;display:block}
+.stat span{color:var(--dim);font-size:11px}
+.tabs{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.tab{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 16px;cursor:pointer;color:var(--txt)}
+.tab.on{border-color:var(--acc);color:var(--acc);background:#12233f}
+.cols{display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.panel h3{color:var(--vio);font-size:15px;margin-bottom:10px}
+.row{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row .info{flex:1;min-width:150px}
+.nm{font-weight:600}
+.lvl{color:var(--acc);font-size:12px}
+.ds{color:var(--dim);font-size:12px;margin-top:2px}
+.btn{background:#1d3a63;border:1px solid var(--acc);color:#cfe3ff;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn:hover{background:#25497c}
+.btn.ok{background:#123f2a;border-color:var(--good);color:#bdf5d8}
+.btn.no{opacity:.35;cursor:default}
+.btn.gold{background:#5a3a10;border-color:var(--gold);color:#ffe9b8}
+.btn.vio{background:#2c2050;border-color:var(--vio);color:#e2d5ff}
+.qty{display:flex;gap:6px;justify-content:center;margin-bottom:4px;flex-wrap:wrap}
+.q{padding:5px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:13px;background:var(--panel2)}
+.q.on{border-color:var(--good);color:var(--good);font-weight:700}
+.mine{width:100%;background:#123c66;border:1px solid var(--acc);color:#dff1ff;border-radius:10px;padding:10px;font-size:15px;cursor:pointer;margin-bottom:10px}
+.mine:hover{background:#1a4f86}
+.meter{height:8px;background:#0b1224;border-radius:4px;overflow:hidden;margin-top:4px}
+.meter i{display:block;height:100%;background:var(--acc)}
+.toast{position:fixed;right:16px;bottom:16px;background:#1a2a4a;border:1px solid var(--gold);padding:10px 14px;border-radius:8px;animation:fade 4s forwards;z-index:9}
+@keyframes fade{0%{opacity:0;transform:translateY(10px)}10%{opacity:1}80%{opacity:1}100%{opacity:0}}
+.mini{color:var(--dim);cursor:pointer}
+.foot{text-align:center;color:var(--dim);font-size:12px;margin-top:14px}
+.chip{display:inline-block;background:#241f33;border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:12px;margin:3px;color:var(--dim)}
+.chip.on{border-color:var(--gold);color:var(--gold)}
+input,textarea{background:#0d1327;border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:6px;font-family:inherit}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+</style>
+<meta name="description" content="Idle Galaxy: Империя из руды — космический идл-кликер: добывайте руду, стройте флот, покоряйте Край Галактики и перерождайтесь ради звёздной пыли.">
+<meta property="og:title" content="Idle Galaxy: Империя из руды">
+<meta property="og:description" content="Космический идл-кликер: рудники, флот, руины Края и вечные перерождения.">
+</head>
+<body>
+<div class="wrap">
+<h1>🚀 Idle Galaxy: Империя из руды</h1>
+<div class="sub">добыча → переработка → флот → руины Края. Ресурсы копятся даже когда игра закрыта.</div>
+<div class="bar" id="bar"></div>
+<div class="stats" id="stats"></div>
+<div class="tabs" id="tabs"></div>
+<div class="cols">
+<div id="content"></div>
+<div><div class="panel" id="journal"></div><div class="panel" id="achs"></div></div>
+</div>
+<div class="foot">Прогресс сохраняется автоматически в браузере · v5.0 · <span class="mini" id="sndBtn" onclick="toggleSnd()">🔊 звук</span></div>
+</div>
+<div id="toasts"></div>
+<script>
+'use strict';
+// ===== данные =====
+const KEY='spaceIdle_v5';
+const UPS=[
+ {n:'Робот-бурильщик',d:'добыча руды',c:{ore:10},m:1.15},
+ {n:'Газовая вышка',d:'добыча газа',c:{ore:25},m:1.15},
+ {n:'Титановый рефайнер',d:'−0,2 руды/сек → +0,1 титана/сек',c:{ore:50,gas:30},m:1.18},
+ {n:'Автодрон-сборщик',d:'+0,5% ко всей добыче',c:{gas:60},m:1.2},
+ {n:'Корабельный цех',d:'+0,2 титана/сек; открывает постройку кораблей',c:{ore:80,gas:40},m:1.2},
+ {n:'Зонд-разведчик',d:'+0,2 газа/сек и шанс найти титан',c:{ore:120},m:1.2}
+];
+const SHIP_COST=30,SHIP_M=1.5;
+const SECTORS=[
+ {n:'Домашняя система',cost:0,d:'стартовый сектор'},
+ {n:'Пояс астероидов',cost:50,b:{ore:.25},d:'+25% руды'},
+ {n:'Газовые гиганты',cost:150,b:{gas:.25},d:'+25% газа'},
+ {n:'Кольцо плавильщиков',cost:400,b:{ti:.25},d:'+25% титана'},
+ {n:'Внешний рубеж',cost:1000,b:{ore:.25,gas:.25},d:'+25% руды и газа'},
+ {n:'Край Галактики',cost:2500,b:{ore:.5,gas:.5,ti:.5},d:'+50% ко всему'}
+];
+const TECHS=[
+ {id:'drill',n:'Ускоренная добыча',c:40,req:null,e:'+25% к добыче руды'},
+ {id:'plasma',n:'Плазменные буры',c:120,req:'drill',e:'+35% к добыче руды'},
+ {id:'turbo',n:'Турбины нового типа',c:60,req:null,e:'+25% к добыче газа'},
+ {id:'fusion',n:'Газотермальный синтез',c:150,req:'turbo',e:'+35% к добыче газа'},
+ {id:'ai',n:'ИИ-управление флотом',c:200,req:null,e:'+100 к мощи флота'},
+ {id:'hyper',n:'Гипердвигатель',c:250,req:'ai',e:'экспедиции на 30% быстрее'},
+ {id:'quant',n:'Квантовый резонанс',c:300,req:'drill,turbo',e:'+20% к переработке и цеху'},
+ {id:'modular',n:'Модульные верфи',c:350,req:'quant',e:'корабли вдвое дешевле'},
+ {id:'relay',n:'Оффлайн-реле',c:180,req:'fusion',e:'офлайн-накопление до 24 часов'}
+];
+const RELICS=[
+ {id:'crys',n:'Кристалл шахтёра',d:'+15% к руде за уровень',v:.15},
+ {id:'core',n:'Ядро скважины',d:'+15% к газу за уровень',v:.15},
+ {id:'forge',n:'Молот горна',d:'+15% к титану за уровень',v:.15},
+ {id:'sign',n:'Знак капитана',d:'−40% потерь за уровень',v:.4},
+ {id:'lens',n:'Линза древних',d:'+25% к частоте событий за уровень',v:.25},
+ {id:'echo',n:'Эхо Края',d:'+20% к пыли за уровень',v:.2}
+];
+const EXPS=[
+ {id:'belt',n:'Разведка Пояса',dur:60,ships:1,loss:0,rw:{ore:100,gas:40}},
+ {id:'aster',n:'Рейд на астероиды',dur:150,ships:2,loss:.15,rw:{ore:250,gas:120,ti:10}},
+ {id:'edge',n:'Руины Края',dur:300,ships:3,loss:.25,rw:{gas:300,ti:40},relic:true}
+];
+const ACH=[
+ {id:'a1',n:'Первые глыбы',d:'Купить 1 улучшение',f:()=>S.stats.buys>=1},
+ {id:'a2',n:'Бурильный мятеж',d:'10 бурильщиков',f:()=>S.up[0]>=10},
+ {id:'a3',n:'Газовая держава',d:'10 вышек',f:()=>S.up[1]>=10},
+ {id:'a4',n:'Первый киль',d:'Построить корабль',f:()=>S.shipsBuilt>=1},
+ {id:'a5',n:'Эскадрилья',d:'10 кораблей',f:()=>S.ships>=10},
+ {id:'a6',n:'Титановый поток',d:'100 титана всего',f:()=>S.stats.tiAll>=100},
+ {id:'a7',n:'Первый шаг в бесконечность',d:'Первое перерождение',f:()=>S.rebirths>=1},
+ {id:'a8',n:'Звёздный след',d:'50 пыли',f:()=>S.dust>=50},
+ {id:'a9',n:'Цикл вечности',d:'5 перерождений',f:()=>S.rebirths>=5},
+ {id:'a10',n:'Картограф',d:'Открыть 3 сектора',f:()=>S.sector>=3},
+ {id:'a11',n:'Хозяин Края',d:'Открыть Край Галактики',f:()=>S.sector>=5},
+ {id:'a12',n:'Изобретатель',d:'3 технологии',f:()=>Object.keys(S.tech).length>=3},
+ {id:'a13',n:'Наука побеждает',d:'Все 9 технологий',f:()=>Object.keys(S.tech).length>=9},
+ {id:'a14',n:'Первый рейс',d:'Отправить экспедицию',f:()=>S.stats.exp>=1},
+ {id:'a15',n:'Адмирал',d:'10 экспедиций',f:()=>S.stats.exp>=10},
+ {id:'a16',n:'Коллекционер',d:'Получить 3 реликвии',f:()=>Object.keys(S.relics).length>=3},
+ {id:'a17',n:'Музей древностей',d:'Все 6 видов реликвий',f:()=>Object.keys(S.relics).length>=6},
+ {id:'a18',n:'Тонны руды',d:'10 000 руды всего',f:()=>S.stats.oreAll>=10000},
+ {id:'a19',n:'Промышленник',d:'100 уровней улучшений',f:()=>S.up.reduce((a,b)=>a+b,0)>=100},
+ {id:'a20',n:'Везение',d:'Победить Стража Руин',f:()=>S.stats.bossWin>=1}
+];
+// ===== состояние =====
+function defState(){return{ore:10,gas:5,ti:0,ships:0,shipsBuilt:0,dust:0,rebirths:0,
+ up:[0,0,0,0,0,0],buyQty:0,auto:[0,0,0,0,0,0],autoFleet:false,sector:0,tech:{},relics:{},boss:0,
+ ach:[],contracts:[],exps:[],lastDaily:'',streak:0,playMin:0,bestDust:0,
+ stats:{oreAll:0,gasAll:0,tiAll:0,buys:0,exp:0,expWin:0,bossWin:0,relicAll:0},
+ log:['✨ База основана. Начните с покупки Робота-бурильщика!'],last:0,snd:true}}
+let S=defState();
+let sndA=null,evT=45,saveT=0,offlineShow=null,tab='base';
+
+// ===== утилиты =====
+const $=id=>document.getElementById(id);
+function fmt(n){n=Math.max(0,n);if(n>=1e12)return (n/1e12).toFixed(2)+'T';if(n>=1e9)return (n/1e9).toFixed(2)+'B';if(n>=1e6)return (n/1e6).toFixed(2)+'M';if(n>=1e3)return (n/1e3).toFixed(1)+'K';return n<10&&n%1!=0?n.toFixed(1):String(Math.round(n))}
+function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function slog(t){S.log.unshift(t);if(S.log.length>40)S.log.length=40}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.getElementById('toasts').appendChild(d);setTimeout(function(){d.remove()},4000)}
+function beep(f,d){if(!S.snd)return;try{if(!sndA)sndA=new (window.AudioContext||window.webkitAudioContext)();const o=sndA.createOscillator(),g=sndA.createGain();o.type='sine';o.frequency.value=f;g.gain.value=.06;o.connect(g);g.connect(sndA.destination);o.start();o.stop(sndA.currentTime+(d||.12))}catch(e){}}
+function addTi(x){S.ti+=x;S.stats.tiAll+=x}
+function toggleSnd(){S.snd=!S.snd;save();render()}
+
+// ===== множители =====
+function relicLvl(id){return Math.floor((S.relics[id]||0)/3)}
+function relicMul(id){const r=RELICS.find(function(x){return x.id==id});return r.v*Math.max(1,relicLvl(id))}
+function mult(kind){let m=1+S.dust*0.1+S.up[3]*0.005;
+ const sec=SECTORS[S.sector];if(sec.b&&sec.b[kind])m*=1+sec.b[kind];
+ const rid=kind=='ore'?'crys':kind=='gas'?'core':'forge';m*=1+relicMul(rid);
+ if(kind=='ore'){if(S.tech.drill)m*=1.25;if(S.tech.plasma)m*=1.35}
+ if(kind=='gas'){if(S.tech.turbo)m*=1.25;if(S.tech.fusion)m*=1.35}
+ if(kind=='ti'&&S.tech.quant)m*=1.2;
+ return m}
+function oreRate(){return S.up[0]*0.5*mult('ore')}
+function gasRate(){return (S.up[1]*0.3+S.up[5]*0.2)*mult('gas')}
+function tiRate(){return S.up[4]*0.2*mult('ti')}
+function shipCost(){return Math.ceil(SHIP_COST*Math.pow(SHIP_M,S.shipsBuilt)*(S.tech.modular?0.5:1))}
+function shipPow(){return S.ships*10+(S.tech.ai?100:0)}
+function lossMul(){return Math.max(0,1-relicMul('sign'))}
+function dustMul(){return 1+relicMul('echo')}
+function eventMul(){return 1+relicMul('lens')}
+
+// ===== покупки =====
+function costAt(i,l){const u=UPS[i];return{ore:u.c.ore?u.c.ore*Math.pow(u.m,l):0,gas:u.c.gas?u.c.gas*Math.pow(u.m,l):0}}
+function sumCost(i,from,n){let o=0,g=0;for(let k=0;k<n;k++){const c=costAt(i,from+k);o+=c.ore;g+=c.gas}return{ore:Math.round(o*10)/10,gas:Math.round(g*10)/10}}
+function geoN(base,m,have){if(!base||have<base)return 0;return Math.min(9999,Math.floor(Math.log(have*(m-1)/base+1)/Math.log(m)))}
+function qtyMax(i){const u=UPS[i];const nO=u.c.ore?geoN(u.c.ore,u.m,S.ore):9999;const nG=u.c.gas?geoN(u.c.gas,u.m,S.gas):9999;return Math.min(nO,nG)}
+function canBuyN(i,n){if(n<1)return false;const c=sumCost(i,S.up[i],n);return c.ore<=S.ore&&c.gas<=S.gas}
+function priceTxt(c){let t='';if(c.ore)t='⚡ руда:'+fmt(c.ore);if(c.gas)t+=(t?' ◆':'◆')+' газ:'+fmt(c.gas);return t||'—'}
+function buyUp(i,manual){
+ let nEff;
+ if(S.buyQty<5){nEff=canBuyN(i,S.buyQty)?S.buyQty:qtyMax(i)}else nEff=qtyMax(i);
+ if(nEff<1)return;
+ const c=sumCost(i,S.up[i],nEff);
+ S.ore-=c.ore;S.gas-=c.gas;S.up[i]+=nEff;S.stats.buys+=nEff;
+ if(manual){slog('🔨 Куплено: '+UPS[i].n+' ×'+nEff);beep(660)}
+ checkAch();render()}
+function setQty(idx){S.buyQty=idx;render()}
+function toggleAuto(i){S.auto[i]=S.auto[i]?0:1;slog('🤖 АВТО для «'+UPS[i].n+'»: '+(S.auto[i]?'вкл':'выкл'));beep(600);save();render()}
+function mineOre(){S.ore+=1;S.stats.oreAll+=1;render()}
+function buyShip(){if(S.up[4]<1){toast('Сначала постройте Корабельный цех');return}
+ const c=shipCost();if(S.ti<c){toast('Нужно титана: '+fmt(c));return}
+ S.ti-=c;S.ships++;S.shipsBuilt++;slog('🚀 Построен корабль №'+S.shipsBuilt);beep(520);checkAch();render()}
+
+// ===== контракты =====
+const CTYPES=[
+ {k:'ore',n:'Добыть руды',g:function(){return Math.max(50,Math.round(oreRate()*120))},unit:'руды',snap:function(){return S.stats.oreAll}},
+ {k:'gas',n:'Добыть газа',g:function(){return Math.max(30,Math.round(gasRate()*120))},unit:'газа',snap:function(){return S.stats.gasAll}},
+ {k:'ti',n:'Получить титана',g:function(){return Math.max(8,Math.round((tiRate()+0.5)*90))},unit:'титана',snap:function(){return S.stats.tiAll}},
+ {k:'buy',n:'Купить улучшений',g:function(){return 3},unit:'',snap:function(){return S.stats.buys}},
+ {k:'exp',n:'Отправить экспедиций',g:function(){return 2},unit:'',snap:function(){return S.stats.exp}}
+];
+function makeContract(exceptK){const pool=CTYPES.filter(function(t){return t.k!=exceptK});
+ const t=pool[Math.floor(Math.random()*pool.length)];
+ return{k:t.k,need:t.g(),s:t.snap(),left:300}}
+function newContracts(){S.contracts=[makeContract(''),makeContract('')]}
+function contractReward(c){const ti=3+Math.round(c.need*0.06);let dust=0;
+ if(Math.random()<0.25){dust=2;S.dust+=2}
+ addTi(ti);slog('📜 Контракт выполнен: +'+ti+' титана'+(dust?', +'+dust+' пыли':''));
+ toast('📜 Контракт выполнен!');beep(880)}
+function updContracts(dt){if(S.contracts.length<2)newContracts();
+ for(let i=0;i<2;i++){const c=S.contracts[i];if(!c){S.contracts[i]=makeContract('');continue}
+  const t=CTYPES.find(function(x){return x.k==c.k});
+  c.left-=dt;
+  if(t.snap()-c.s>=c.need){contractReward(c);S.contracts[i]=makeContract(c.k)}
+  else if(c.left<=0)S.contracts[i]=makeContract(c.k)}}
+
+// ===== экспедиции =====
+function freeShips(){let used=0;S.exps.forEach(function(e){used+=e.ships});return Math.max(0,S.ships-used)}
+function startExp(id,n){
+ const e=EXPS.find(function(x){return x.id==id});if(!e)return;
+ n=n||e.ships;if(n>freeShips()){toast('Недостаточно свободных кораблей');return}
+ let boss=false,bw=0;
+ if(id=='edge'){S.boss++;if(S.boss%4==0){boss=true;bw=120+60*(S.boss/4-1)}}
+ S.ships-=n;S.stats.exp++;
+ const dur=Math.round(e.dur*(S.tech.hyper?0.7:1));
+ if(boss)slog('⚠ Вылет в Руины: там Страж (мощь '+bw+') против вашей '+shipPow());
+ S.exps.push({id:id,ships:n,end:Date.now()+dur*1000,boss:boss,bw:bw});
+ slog('🛰 Экспедиция «'+e.n+'»: отправлено '+n+' корабл., время '+Math.round(dur/60*10)/10+' мин');
+ beep(520);save();render()}
+function giveRelic(){const r=RELICS[Math.floor(Math.random()*RELICS.length)];
+ S.relics[r.id]=(S.relics[r.id]||0)+1;const cnt=S.relics[r.id];S.stats.relicAll++;
+ if(cnt%3==0)slog('🧿 «'+r.n+'» достиг уровня '+relicLvl(r.id)+'!');
+ else if(cnt>1){S.dust+=3;slog('🧿 Лишняя реликвия «'+r.n+'» обращена в 3 пыли')}
+ else slog('🧿 Найдена реликвия: «'+r.n+'» — '+r.d);
+ toast('🧿 Реликвия: '+r.n)}
+function updExps(noAuto){
+ for(let i=S.exps.length-1;i>=0;i--){const x=S.exps[i];if(Date.now()<x.end)continue;
+  const e=EXPS.find(function(v){return v.id==x.id});
+  let mul=x.ships;let lost=0;let win=true;
+  for(let k=0;k<x.ships;k++)if(e.loss>0&&Math.random()<e.loss*lossMul())lost++;
+  if(x.boss){if(shipPow()>=x.bw){S.stats.bossWin++;mul*=2;slog('⚔ Страж повержен! Награда удвоена');toast('⚔ Страж повержен!')}
+   else{win=false;lost+=Math.ceil(x.ships*0.25);mul*=0.5;slog('⚔ Страж оказался сильнее: награда урезана');toast('⚔ Поражение от Стража')}}
+  const rw={ore:(e.rw.ore||0)*mul,gas:(e.rw.gas||0)*mul,ti:(e.rw.ti||0)*mul};
+  S.ore+=rw.ore;S.stats.oreAll+=rw.ore;S.gas+=rw.gas;S.stats.gasAll+=rw.gas;addTi(rw.ti);
+  S.ships=Math.max(0,S.ships-lost);S.stats.expWin++;
+  slog('✅ «'+e.n+'»: добыто '+fmt(rw.ore)+' руды, '+fmt(rw.gas)+' газа, '+fmt(rw.ti)+' титана'+(lost?', потеряно кораблей: '+lost:''));
+  if(e.relic&&Math.random()<0.25*(win?1:0.5))giveRelic();
+  S.exps.splice(i,1);beep(700);checkAch()}
+ if(!noAuto&&S.autoFleet&&!S.exps.some(function(x){return x.id=='belt'})&&freeShips()>0)startExp('belt',freeShips())}
+function toggleFleet(){S.autoFleet=!S.autoFleet;slog('🛰 АВТО-флот: '+(S.autoFleet?'вкл':'выкл'));beep(600);save();render()}
+
+// ===== события =====
+function fireEvent(){const r=Math.random();
+ if(r<0.4){const g=Math.round(50+oreRate()*60);S.ore+=g;S.stats.oreAll+=g;slog('🎲 Рудная жила: +'+fmt(g)+' руды')}
+ else if(r<0.7){const g=Math.round(30+gasRate()*60);S.gas+=g;S.stats.gasAll+=g;slog('🎲 Метеоритный поток: +'+fmt(g)+' газа')}
+ else{const g=Math.round(2+Math.random()*4+S.up[2]);addTi(g);slog('🎲 Древний артефакт: +'+g+' титана')}}
+
+// ===== автопокупка =====
+function doAuto(){for(let i=0;i<6;i++){if(!S.auto[i])continue;buyUp(i,false)}}
+
+// ===== главный тик =====
+function tick(dt){
+ const rO=oreRate(),rG=gasRate();
+ S.ore+=rO*dt;S.gas+=rG*dt;S.stats.oreAll+=rO*dt;S.stats.gasAll+=rG*dt;
+ const rf=S.up[2]*0.2*dt;const use=Math.min(rf,S.ore);S.ore-=use;addTi(use/0.2*0.1);
+ addTi(tiRate()*dt);
+ if(S.up[5]>0&&Math.random()<dt*0.02*S.up[5]){addTi(1);slog('🛰 Зонд нашёл 1 титана!')}
+ evT-=dt;if(evT<=0){fireEvent();evT=(40+Math.random()*20)/eventMul()}
+ updContracts(dt);updExps(false);doAuto();
+ S.playMin+=dt/60;checkAch();
+ saveT+=dt;if(saveT>5){saveT=0;save()}}
+
+// ===== достижения =====
+function checkAch(){ACH.forEach(function(a){if(!S.ach.includes(a.id)&&a.f()){S.ach.push(a.id);toast('🏆 Достижение: '+a.n);slog('🏆 Достижение: «'+a.n+'»');beep(990)}})}
+
+// ===== ежедневный бонус =====
+function daily(){const today=new Date().toISOString().slice(0,10);if(S.lastDaily==today)return;
+ const y=new Date(Date.now()-86400000).toISOString().slice(0,10);
+ S.streak=(S.lastDaily==y)?S.streak+1:1;S.lastDaily=today;
+ const o=40*S.streak,g=15*S.streak,t=4*S.streak;
+ S.ore+=o;S.gas+=g;addTi(t);
+ slog('🎁 Ежедневный бонус: +'+o+' руды, +'+g+' газа, +'+t+' титана (серия '+S.streak+')');
+ toast('🎁 Ежедневный бонус! Серия: '+S.streak)}
+
+// ===== офлайн =====
+function offline(){if(!S.last)return;
+ const cap=S.tech.relay?86400:28800;
+ let dt=Math.min((Date.now()-S.last)/1000,cap);
+ if(dt<10)return;
+ updExps(true);
+ let rem=dt;const ore0=S.ore,gas0=S.gas,ti0=S.ti;
+ while(rem>0){const g=Math.min(60,rem);rem-=g;
+  S.ore+=oreRate()*g;S.gas+=gasRate()*g;
+  const rf=S.up[2]*0.2*g;const use=Math.min(rf,S.ore);S.ore-=use;addTi(use/0.2*0.1);
+  addTi(tiRate()*g)}
+ const d={ore:S.ore-ore0,gas:S.gas-gas0,ti:S.ti-ti0,min:dt/60};
+ if(dt>30){slog('🛰 Пока вас не было ('+fmt(d.min)+' мин): +'+fmt(d.ore)+' руды, +'+fmt(d.gas)+' газа, +'+fmt(d.ti)+' титана');
+  offlineShow=d;setTimeout(function(){offlineShow=null;render()},12000)}}
+
+// ===== перерождение =====
+function doRebirth(){
+ if(S.shipsBuilt<1){toast('Постройте хотя бы один корабль');return}
+ const gain=Math.round(S.shipsBuilt*dustMul());
+ if(!confirm('Перерождение сбросит базу, сектора и технологии.\nНаграда: +'+gain+' звёздной пыли (навсегда +10% добычи за пылинку).\nПродолжить?'))return;
+ S.dust+=gain;S.bestDust=Math.max(S.bestDust,gain);S.rebirths++;
+ S.ore=10+25*S.rebirths;S.gas=5+10*S.rebirths;S.ti=0;
+ S.up=[0,0,0,0,0,0];S.ships=0;S.shipsBuilt=0;S.sector=0;S.tech={};S.exps=[];S.boss=0;S.contracts=[];
+ slog('✨ ПЕРЕРОЖДЕНИЕ №'+S.rebirths+'. Пыль: '+S.dust+'. Бонус старта: +'+S.ore+' руды, +'+S.gas+' газа');
+ toast('✨ Перерождение! +'+gain+' пыли');beep(990);save();newContracts();render()}
+
+// ===== карта и технологии =====
+function buySector(i){const s=SECTORS[i];if(S.ti<s.cost)return;
+ S.ti-=s.cost;S.sector=i;slog('🌌 Открыт сектор: '+s.n+' ('+s.d+')');toast('🌌 Новый сектор!');beep(880);checkAch();save();render()}
+function buyTech(id){const t=TECHS.find(function(x){return x.id==id});
+ const reqs=t.req?t.req.split(','):[];const ok=reqs.every(function(r){return S.tech[r]});
+ if(!ok||S.ti<t.c)return;
+ S.ti-=t.c;S.tech[id]=1;slog('🔬 Изучено: '+t.n+' ('+t.e+')');beep(880);checkAch();save();render()}
+
+// ===== экспорт/импорт =====
+function doExport(){const code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+ const el=document.getElementById('savecode');el.value=code;el.select();
+ try{document.execCommand('copy');toast('💾 Код скопирован')}catch(e){toast('💾 Код в поле — скопируйте вручную')}
+ slog('💾 Код сохранения готов')}
+function doImport(){try{
+ const o=JSON.parse(decodeURIComponent(escape(atob(document.getElementById('savecode').value.trim()))));
+ const d=defState();S=Object.assign(d,o);S.stats=Object.assign(d.stats,o.stats||{});
+ S.up=(S.up&&S.up.length==6)?S.up:[0,0,0,0,0,0];S.auto=(S.auto&&S.auto.length==6)?S.auto:[0,0,0,0,0,0];
+ if(!S.contracts||S.contracts.length!=2)S.contracts=[];
+ if(S.log&&S.log.length)S.log=S.log.slice(0,40);else S.log=['✨ База основана.'];
+ save();location.reload();
+}catch(e){toast('❌ Неверный код сохранения')}}
+
+// ===== загрузка =====
+function load(){try{const raw=localStorage.getItem(KEY)||localStorage.getItem('spaceIdle_v4')||localStorage.getItem('spaceIdle');
+ if(!raw)return;const o=JSON.parse(raw);const d=defState();
+ Object.keys(d).forEach(function(k){if(o[k]!==undefined)S[k]=o[k]});
+ if(o.stats)S.stats=Object.assign(d.stats,o.stats);
+ if(o.tech)S.tech=o.tech; if(o.relics)S.relics=o.relics;
+ S.up=(S.up&&S.up.length==6)?S.up:d.up;S.auto=(S.auto&&S.auto.length==6)?S.auto:d.auto;
+ if(!S.contracts||S.contracts.length!=2)S.contracts=[];
+ if(!S.log||!S.log.length)S.log=d.log;
+ if(raw!=localStorage.getItem(KEY))slog('📦 Сохранение старой версии перенесено');
+}catch(e){S=defState();slog('⚠ Сохранение повреждено — начата новая база')}}
+// ===== отрисовка =====
+function statCell(lbl,val,rate){return '<div class="stat"><b>'+fmt(val)+'</b><span>'+(rate!=null?'+'+fmt(rate)+'/сек ':'')+lbl+'</span></div>'}
+function setTab(t){tab=t;render()}
+function render(){
+ const st=document.getElementById('stats');
+ st.innerHTML=statCell('руды',S.ore,oreRate())+statCell('газа',S.gas,gasRate())+statCell('титана',S.ti,null)+statCell('кораблей (свободно '+freeShips()+')',S.ships,null)+statCell('пыли (+'+Math.round(S.dust*10)+'% добычи)',S.dust,null);
+ const tb=document.getElementById('tabs');
+ if(tb.dataset.built!='1'){tb.innerHTML=[['base','🏭 База'],['exp','🛰 Экспедиции'],['map','🌌 Карта'],['tech','🔬 Технологии'],['stats','📊 Итоги']].map(function(t){return '<div class="tab'+(tab==t[0]?' on':'')+'" onclick="setTab(\''+t[0]+'\')">'+t[1]+'</div>'}).join('');tb.dataset.built='1'}
+ const ae=document.activeElement;
+ if(!(ae&&(ae.tagName=='INPUT'||ae.tagName=='TEXTAREA'))){
+  document.getElementById('content').innerHTML=tab=='base'?renderBase():tab=='exp'?renderExp():tab=='map'?renderMap():tab=='tech'?renderTech():renderStats()}
+ document.getElementById('journal').innerHTML='<h3>📜 Журнал базы</h3>'+S.log.map(function(l){return '<div class="ds">'+l+'</div>'}).join('');
+ document.getElementById('achs').innerHTML='<h3>🏆 Достижения ('+S.ach.length+'/'+ACH.length+')</h3><div>'+ACH.map(function(a){const on=S.ach.includes(a.id);return '<span class="chip'+(on?' on':'')+'">'+(on?'✔':'🔒')+' '+a.n+'</span>'}).join('')+'</div>';
+ document.getElementById('sndBtn').textContent=S.snd?'🔊 звук':'🔇 без звука';
+ const bar=document.getElementById('bar');
+ if(offlineShow){bar.style.display='block';bar.textContent='🛰 Пока вас не было ('+fmt(offlineShow.min)+' мин): +'+fmt(offlineShow.ore)+' руды, +'+fmt(offlineShow.gas)+' газа, +'+fmt(offlineShow.ti)+' титана'}
+ else bar.style.display='none'}
+
+function renderBase(){
+ let h='<div class="panel"><button class="mine" onclick="mineOre()">⛏ Добыть руду вручную (+1)</button>';
+ h+='<div class="qty">'+[1,10,25,50,100,0].map(function(v,idx){return '<span class="q'+(S.buyQty==idx?' on':'')+'" onclick="setQty('+idx+')">'+(idx==5?'МАКС':v)+'</span>'}).join('')+'</div></div>';
+ h+='<div class="panel"><h3>📜 Контракты</h3>';
+ h+=S.contracts.map(function(c){const t=CTYPES.find(function(x){return x.k==c.k});const cur=Math.max(0,t.snap()-c.s);const p=Math.min(1,cur/c.need);
+  return '<div class="row"><div class="info"><div class="nm">'+t.n+': '+fmt(cur)+' / '+fmt(c.need)+(t.unit?' '+t.unit:'')+'</div><div class="meter"><i style="width:'+(p*100)+'%"></i></div><div class="ds">осталось '+Math.ceil(c.left)+' сек · награда: титан</div></div></div>'}).join('');
+ h+='</div><div class="panel"><h3>🏭 Улучшения</h3>';
+ h+=UPS.map(function(u,i){
+  let nEff;if(S.buyQty<5){nEff=canBuyN(i,S.buyQty)?S.buyQty:qtyMax(i)}else nEff=qtyMax(i);
+  const c=sumCost(i,S.up[i],Math.max(1,nEff));const afford=nEff>0&&canBuyN(i,nEff);
+  return '<div class="row"><div class="info"><div class="nm">'+(i+1)+'. '+u.n+' <span class="lvl">ур.'+S.up[i]+'</span></div><div class="ds">'+u.d+'</div></div>'
+   +'<button class="btn'+(S.auto[i]?' vio':'')+'" onclick="toggleAuto('+i+')">АВТО</button>'
+   +'<button class="btn '+(afford?'ok':'no')+'" onclick="buyUp('+i+',true)">'+priceTxt(c)+(nEff>1?' ×'+nEff:'')+(nEff<1&&S.buyQty==5?' ×0':'')+'</button></div>'}).join('');
+ if(S.up[4]>0){const c=shipCost();
+  h+='<div class="panel"><h3>🚀 Флот</h3><div class="row"><div class="info"><div class="nm">Корабль — титан:'+fmt(c)+'</div><div class="ds">Всего: '+S.ships+' · построено за цикл: '+S.shipsBuilt+' · мощь: '+shipPow()+'</div></div><button class="btn '+(S.ti>=c?'gold':'no')+'" onclick="buyShip()">Построить</button></div></div>'}
+ return h}
+
+function renderExp(){
+ let h='<div class="panel"><h3>🛰 АВТО-флот</h3><div class="row"><div class="info"><div class="nm">Автоматически отправлять свободные корабли в «Разведку Пояса»</div><div class="ds">Свободно: '+freeShips()+' из '+S.ships+'</div></div><button class="btn'+(S.autoFleet?' vio':'')+'" onclick="toggleFleet()">'+(S.autoFleet?'ВКЛ':'ВЫКЛ')+'</button></div></div>';
+ h+='<div class="panel"><h3>🎯 Доступные рейсы</h3>'+EXPS.map(function(e){
+  const can=freeShips()>=e.ships;
+  return '<div class="row"><div class="info"><div class="nm">'+e.n+'</div><div class="ds">'+Math.round(e.dur/60)+' мин · потери до '+Math.round(e.loss*100)+'% · награда на 1 корабль: '+fmt(e.rw.ore)+' руды, '+fmt(e.rw.gas)+' газа'+(e.rw.ti?', '+e.rw.ti+' титана':'')+(e.relic?', шанс реликвии 25%':'')+(e.id=='edge'?', каждый 4-й рейд — Страж':'')+'</div></div>'
+   +'<button class="btn '+(can?'ok':'no')+'" onclick="startExp(\''+e.id+'\','+e.ships+')">Отправить ('+e.ships+')</button>'
+   +(e.id=='belt'&&freeShips()>0?'<button class="btn" onclick="startExp(\'belt\','+freeShips()+')">Всех ('+freeShips()+')</button>':'')+'</div>'}).join('')+'</div>';
+ h+='<div class="panel"><h3>⏳ В полёте</h3>';
+ h+=S.exps.length?S.exps.map(function(x){const e=EXPS.find(function(v){return v.id==x.id});const dur=e.dur*(S.tech.hyper?0.7:1);const left=Math.max(0,(x.end-Date.now())/1000);
+  return '<div class="row"><div class="info"><div class="nm">'+e.n+' — '+x.ships+' корабл.'+(x.boss?' · ⚠ Страж!':'')+'</div><div class="meter"><i style="width:'+Math.min(100,(1-left/dur)*100)+'%"></i></div></div><span class="mini">'+Math.ceil(left)+' сек</span></div>'}).join(''):'<div class="ds">Флот на базе. Отправьте корабли в рейс!</div>';
+ h+='</div><div class="panel"><h3>🧿 Реликвии</h3>';
+ const rs=RELICS.filter(function(r){return S.relics[r.id]});
+ h+=rs.length?rs.map(function(r){return '<div class="row"><div class="info"><div class="nm">'+r.n+' ×'+S.relics[r.id]+' (ур.'+relicLvl(r.id)+')</div><div class="ds">'+r.d+'</div></div></div>'}).join(''):'<div class="ds">Реликвии падают в «Руинах Края». Каждые 3 штуки — уровень эффекта.</div>';
+ return h+'</div>'}
+
+function renderMap(){
+ return '<div class="panel"><h3>🌌 Сектора</h3>'+SECTORS.map(function(s,i){
+  let right='';
+  if(i<=S.sector)right='<span class="chip on">✔ освоен</span>';
+  else if(i==S.sector+1)right=S.ti>=s.cost?'<button class="btn ok" onclick="buySector('+i+')">Открыть — титан:'+fmt(s.cost)+'</button>':'<button class="btn no">титан:'+fmt(s.cost)+'</button>';
+  else right='<span class="chip">🔒 закройте предыдущий</span>';
+  return '<div class="row"><div class="info"><div class="nm">'+s.n+'</div><div class="ds">'+s.d+'</div></div>'+right+'</div>'}).join('')+'</div>'}
+
+function renderTech(){
+ return '<div class="panel"><h3>🔬 Технологии</h3>'+TECHS.map(function(t){
+  const reqs=t.req?t.req.split(','):[];
+  const ok=reqs.every(function(r){return S.tech[r]});
+  let right;
+  if(S.tech[t.id])right='<span class="chip on">✔ изучено</span>';
+  else if(!ok)right='<span class="chip">🔒 нужно: '+reqs.map(function(r){return TECHS.find(function(x){return x.id==r}).n}).join(', ')+'</span>';
+  else right=S.ti>=t.c?'<button class="btn ok" onclick="buyTech(\''+t.id+'\')">Изучить — титан:'+fmt(t.c)+'</button>':'<button class="btn no">титан:'+fmt(t.c)+'</button>';
+  return '<div class="row"><div class="info"><div class="nm">'+t.n+'</div><div class="ds">'+t.e+'</div></div>'+right+'</div>'}).join('')+'</div>'}
+
+function renderStats(){
+ const gain=Math.round(S.shipsBuilt*dustMul());
+ let h='<div class="panel"><h3>✨ Перерождение</h3><div class="row"><div class="info"><div class="nm">Сбросить базу ради звёздной пыли</div><div class="ds">Каждый построенный корабль = 1 пыль (+10% добычи навсегда). Награда сейчас: <b style="color:var(--gold)">+'+gain+' пыли</b>. Реликвии, достижения и пыль сохраняются.</div></div><button class="btn gold" onclick="doRebirth()">Перерождение</button></div><div class="ds">Лучший цикл: '+S.bestDust+' пыли · перерождений: '+S.rebirths+'</div></div>';
+ h+='<div class="panel"><h3>📊 Статистика</h3><div class="ds">Всего добыто: руды '+fmt(S.stats.oreAll)+' · газа '+fmt(S.stats.gasAll)+' · титана '+fmt(S.stats.tiAll)+'</div><div class="ds">Уровней улучшений: '+S.up.reduce(function(a,b){return a+b},0)+' · покупок: '+S.stats.buys+'</div><div class="ds">Экспедиций: '+S.stats.exp+' (успешных '+S.stats.expWin+') · побед над Стражем: '+S.stats.bossWin+' · реликвий найдено: '+S.stats.relicAll+'</div><div class="ds">Время в игре: '+Math.round(S.playMin)+' мин</div></div>';
+ h+='<div class="panel"><h3>💾 Сохранение</h3><textarea id="savecode" rows="4" style="width:100%"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="doExport()">Экспорт</button><button class="btn" onclick="doImport()">Импорт</button></div><div class="ds">Код перенесёт базу, реликвии и достижения на любое устройство.</div></div>';
+ return h}
+
+// ===== запуск =====
+function init(){
+ load();daily();offline();
+ if(S.contracts.length!=2)newContracts();
+ checkAch();
+ setInterval(function(){tick(0.5);render()},500);
+ render()}
+init();
+</script>
+</body>
+</html>
